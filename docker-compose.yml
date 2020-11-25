@@ -1,0 +1,46 @@
+version: '3.4'
+services:
+  zookeeper:
+    image: 'bitnami/zookeeper:3.6.2'
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: 'bitnami/kafka:2.6.0'
+    ports:
+      - '9092:9092'
+      - '9093:9093'
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_LISTENERS=CLIENT://:9092
+      - KAFKA_ADVERTISED_LISTENERS=CLIENT://kafka:9092
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://kafka:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+    depends_on:
+      - zookeeper
+  notebook:
+    container_name: ${USER}-notebook
+    restart: always
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - "8888:8888"
+    volumes:
+      - "./notebooks:/usr/src/app/notebooks"
+    command: 
+      - jupyter 
+      - notebook 
+      - --ip=0.0.0.0 
+      - --port=8888 
+      - --no-browser 
+      - --allow-root 
+      - --NotebookApp.iopub_data_rate_limit=10000000 
+      - --NotebookApp.allow_origin='*'
+      - --NotebookApp.token=''
+      - --NotebookApp.password=''
